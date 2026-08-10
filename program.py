@@ -9,6 +9,7 @@ import handleImage
 import math
 from numba import jit, njit
 from abc import ABC, abstractmethod
+from colorConverter import getColorConverter
 
 previewImage = None  # Global variable to hold the preview image
 
@@ -116,7 +117,7 @@ def generateRGBAimage(alphaChannel: np.ndarray, spotChannel: np.ndarray, r: np.n
     return rgbaImage
 
 def generateSpotPreview(c: np.ndarray, m: np.ndarray, y: np.ndarray, k: np.ndarray, alphaChannel: np.ndarray, spotChannel: np.ndarray, spotColor=(0, 255, 255)) -> None:
-    r,g,b = handleImage.cmykToRgbArray(c, m, y, k)  # Convert CMYK to RGB
+    r,g,b = getColorConverter(config.getSelectedIcc()).cmykToRgbArray(c, m, y, k)  # Convert CMYK to RGB
     # Create a preview image with the spot channel
     rgbaImage = generateRGBAimage(alphaChannel, spotChannel, r, g, b, spotColor)  # Generate RGBA image
     # Create mask for the spot channel and update RGB channels
@@ -229,7 +230,7 @@ class TiffGenerator(ABC):
         marginMode = config.getSetting("marginMode")
         smartSpot = [config.getSetting("copywhite"), config.getSetting("fillgaps")]
         
-        c,m,y,k,alphaChannel = handleImage.splitImageToCmyk(inputName) # Split the image into CMYK channels and alpha channel
+        c,m,y,k,alphaChannel = handleImage.splitImageToCmyk(inputName, getColorConverter(config.getSelectedIcc())) # Split the image into CMYK channels and alpha channel
         
         spotChannel = np.copy(alphaChannel)  # Copy alpha channel to spot channel
         spotSized = contractAlphaSmooth(spotChannel, pixels=margin, mode=marginMode) # Contract the alpha channel
@@ -360,7 +361,7 @@ class RGBTiffGenerator(TiffGenerator):
         return 'rgb'
     
     def generateLayerList(self, c, m, y, k, alpha, spot) -> list:
-        r, g, b = handleImage.cmykToRgbArray(c,m,y,k)
+        r, g, b = getColorConverter(config.getSelectedIcc()).cmykToRgbArray(c,m,y,k)
         if self.alphaAsSpot:
             return [r, g, b, spot]
         return [r, g, b, alpha, spot]

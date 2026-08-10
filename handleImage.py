@@ -4,67 +4,11 @@ import PIL
 import numpy as np
 import tifffile
 from handleEPS import HandleEPS
+from colorConverter import ColorConverter
 
 # EPS "flag" and the temp filename
 usedEPS = False
 epsOutputName = None
-
-def getScales() -> tuple:
-    # Constants for scaling, these can be adjusted based on the desired output range
-    rgbScale = 255.0
-    cmykScale = 255.0
-    return rgbScale, cmykScale
-
-def rgbToCmykArray(r: np.ndarray, g: np.ndarray, b: np.ndarray) -> tuple:
-    rgbScale, cmykScale = getScales()
-
-    # Normalize RGB
-    r = np.array(r).astype(np.float32) / rgbScale
-    g = np.array(g).astype(np.float32) / rgbScale
-    b = np.array(b).astype(np.float32) / rgbScale
-
-    # CMY intialization
-    c = 1.0 - r
-    m = 1.0 - g
-    y = 1.0 - b
-
-    k = np.minimum.reduce([c, m, y])
-    # Avoid division by zero
-    mask = k < 1.0
-    # Normalize CMY values
-    # Only apply normalization where k < 1 to avoid division by zero
-    c[mask] = (c[mask] - k[mask]) / (1 - k[mask])
-    m[mask] = (m[mask] - k[mask]) / (1 - k[mask])
-    y[mask] = (y[mask] - k[mask]) / (1 - k[mask])
-
-    c[~mask] = 0
-    m[~mask] = 0
-    y[~mask] = 0
-
-    return (
-        (c * cmykScale).astype(np.uint8),
-        (m * cmykScale).astype(np.uint8),
-        (y * cmykScale).astype(np.uint8),
-        (k * cmykScale).astype(np.uint8)
-    )
-
-def cmykToRgbArray(c: np.ndarray, m: np.ndarray, y: np.ndarray, k: np.ndarray) -> tuple:
-    # Convert CMYK (0-255) to RGB (0-255)
-    rgbScale, cmykScale = getScales()
-    c = np.array(c).astype(np.float32) / cmykScale
-    m = np.array(m).astype(np.float32) / cmykScale
-    y = np.array(y).astype(np.float32) / cmykScale
-    k = np.array(k).astype(np.float32) / cmykScale
-
-    r = (1.0 - np.minimum(1.0, c * (1.0 - k) + k))
-    g = (1.0 - np.minimum(1.0, m * (1.0 - k) + k))
-    b = (1.0 - np.minimum(1.0, y * (1.0 - k) + k))
-
-    return (
-        (r * rgbScale).astype(np.uint8),
-        (g * rgbScale).astype(np.uint8),
-        (b * rgbScale).astype(np.uint8)
-    )
 
 def getType(src: str) -> list:
     global usedEPS
@@ -121,7 +65,7 @@ def getType(src: str) -> list:
         else:
             raise ValueError("EPS convertion failed")
 
-def splitImageToCmyk(src: str) -> tuple:
+def splitImageToCmyk(src: str, converter: ColorConverter) -> tuple:
     global usedEPS
     global epsOutputName
     # Make sure to reset usedEPS "flag"
@@ -134,7 +78,7 @@ def splitImageToCmyk(src: str) -> tuple:
         # Read the TIFF image using tifffile
         imgSrc = tifffile.imread(src)  # shape (H,W,4)
         if imgInfo[0] == "RGB":
-            c,m,y,k = rgbToCmykArray(imgSrc[..., 0], imgSrc[..., 1], imgSrc[..., 2])
+            c,m,y,k = converter.rgbToCmykArray(imgSrc[..., 0], imgSrc[..., 1], imgSrc[..., 2])
             alphaChannel = imgSrc[..., 3].astype(np.uint8)
         elif imgInfo[0] == "CMYK":
             c, m, y, k = imgSrc[..., 0], imgSrc[..., 1], imgSrc[..., 2], imgSrc[..., 3]
@@ -158,7 +102,7 @@ def splitImageToCmyk(src: str) -> tuple:
             imgSrc = imgSrc.convert("RGB")
         # Check if the image is RGB or CMYK and convert if needed
         if imgInfo[0] == "RGB":
-            c, m, y, k = rgbToCmykArray(imgSrc.getchannel("R"), imgSrc.getchannel("G"), imgSrc.getchannel("B"))
+            c, m, y, k = converter.rgbToCmykArray(imgSrc.getchannel("R"), imgSrc.getchannel("G"), imgSrc.getchannel("B"))
             # Get alpha channel—guaranteed to exist if has transparency is True
             if hasTransparency:
                 alphaChannel = np.array(imgSrc.getchannel("A"))
