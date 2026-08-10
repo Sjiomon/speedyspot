@@ -27,9 +27,15 @@ class Home(customtkinter.CTkFrame):
 
         if filePath:
             name, ext = os.path.splitext(os.path.basename(filePath))
-            if not ext.lower() in ['.tif', '.tiff', '.png', '.eps']:
+            acceptedExts = ['.tif', '.tiff', '.png']
+            extErrorMsg = "Please select a valid TIFF/TIF or PNG file"
+            if (canHandleEPS):
+                acceptedExts.append('.eps')
+                extErrorMsg = "Please select a valid TIFF/TIF, PNG or EPS file"
+
+            if not ext.lower() in acceptedExts:
                 # Show an error message if the file is not TIFF or PNG
-                CTkMessagebox(title="Invalid file type", message="Please select a valid TIFF, PNG or EPS file.", icon="cancel")
+                CTkMessagebox(title="Invalid file type", message=extErrorMsg, icon="cancel")
                 targetFile = None # Remove saved file path
                 self.chosenFile.configure(text="No file selected") # Update display text
                 return
@@ -50,7 +56,11 @@ class Home(customtkinter.CTkFrame):
         self.convertBtn.configure(command=None)
         self.convertBtn.configure(fg_color="black")
    
-        program.generateSpotImage(targetFile, program.getOutputName(targetFile))  # Start the conversion process
+        try:
+            program.generateSpotImage(targetFile, program.getOutputName(targetFile))  # Start the conversion process
+        except FileNotFoundError:
+            CTkMessagebox(title="File was not found", message="Could not find selected file, please try again", icon="cancel")
+            self.info.grid_remove() # Hide early
       
         self.chosenFile.configure(text="No file selected")
         targetFile = None
