@@ -76,7 +76,7 @@ class IccColorConverter(ColorConverter):
         return rgb_profile, cmyk_profile
                 
     
-    def cmykToRgbArray(self, c, m, y, k):
+    def cmykToRgbArray(self, c: np.ndarray, m: np.ndarray, y: np.ndarray, k: np.ndarray) -> tuple:
         cmyk = np.stack([
             np.asarray(c),
             np.asarray(m),
@@ -103,7 +103,7 @@ class IccColorConverter(ColorConverter):
             np.array(b).astype(np.uint8)
         )
     
-    def rgbToCmykArray(self, r, g, b):
+    def rgbToCmykArray(self, r: np.ndarray, g: np.ndarray, b: np.ndarray) -> tuple:
         rgb = np.stack([
             np.asarray(r),
             np.asarray(g),
