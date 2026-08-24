@@ -26,7 +26,7 @@ def contractAlphaSmooth(alphaChannel: np.ndarray, pixels: int, blurSigma: float 
         mask = (alphaNorm > 0.01).astype(np.uint8)
 
         # Pad with background so borders shrink correctly
-        mask = np.pad(mask, ((1, 1), (1, 1)), mode='constant', constant_values=0)
+        mask = np.pad(mask, ((pixels, pixels), (pixels, pixels)), mode='constant', constant_values=0)
 
         # Elliptical kernel gives smoother contraction
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(2 * pixels + 1, 2 * pixels + 1))
@@ -35,7 +35,8 @@ def contractAlphaSmooth(alphaChannel: np.ndarray, pixels: int, blurSigma: float 
         mask = cv2.erode(mask, kernel, borderType=cv2.BORDER_CONSTANT, borderValue=0)
 
         # Remove padding
-        mask = mask[pixels:-pixels, pixels:-pixels]
+        if pixels > 0:
+            mask = mask[pixels:-pixels, pixels:-pixels]
 
         # Apply contracted mask to original alpha
         contracted = (alphaNorm * mask * 255).astype(np.uint8)
