@@ -58,9 +58,10 @@ class Home(customtkinter.CTkFrame):
         self.convertBtn.configure(fg_color="black")
 
         if (config.getSetting("quicksave")):
-            outputName = filedialog.asksaveasfilename( filetypes=(("TIFF File",".tif"),), defaultextension=".tif", title="Save spot image as" )
-        else:
             outputName = program.getOutputName(targetFile)
+        else:
+            outputName = filedialog.asksaveasfilename( filetypes=(("TIFF File",".tif"),), defaultextension=".tif", title="Save spot image as" )
+
         try:
             program.generateSpotImage(targetFile, outputName)  # Start the conversion process
         except FileNotFoundError:
