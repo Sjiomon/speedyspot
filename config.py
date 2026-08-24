@@ -131,7 +131,8 @@ def getStandardValues() -> dict:
         "spotLayerName": "Spot_1",
         "spotOffsetX": 0,
         "spotOffsetY": 0,
-        "iccProfile": "None"
+        "iccProfile": "None",
+        "quicksave": True
     }    
     
 def getIccProfiles() -> list:

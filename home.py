@@ -1,5 +1,5 @@
 import customtkinter
-import tkinter.filedialog 
+from tkinter import filedialog 
 import os
 import program
 import threading
@@ -7,6 +7,7 @@ from CTkMessagebox import CTkMessagebox
 import handleEPS
 import settingsHandler
 from presets import PresetFrame
+import config
 
 class Home(customtkinter.CTkFrame):
     def selectFile(self):
@@ -22,7 +23,7 @@ class Home(customtkinter.CTkFrame):
             acceptedfileTypes.append(("EPS files", "*.eps"))
         # acceptedfileTypes.i
             
-        filePath = tkinter.filedialog.askopenfilename(filetypes=acceptedfileTypes, title="Select a file")
+        filePath = filedialog.askopenfilename(filetypes=acceptedfileTypes, title="Select a file")
         global targetFile
 
         if filePath:
@@ -55,9 +56,13 @@ class Home(customtkinter.CTkFrame):
         self.after(0, lambda: self.info.configure(text="Processing..."))
         self.convertBtn.configure(command=None)
         self.convertBtn.configure(fg_color="black")
-   
+
+        if (config.getSetting("quicksave")):
+            outputName = filedialog.asksaveasfilename( filetypes=(("TIFF File",".tif"),), defaultextension=".tif", title="Save spot image as" )
+        else:
+            outputName = program.getOutputName(targetFile)
         try:
-            program.generateSpotImage(targetFile, program.getOutputName(targetFile))  # Start the conversion process
+            program.generateSpotImage(targetFile, outputName)  # Start the conversion process
         except FileNotFoundError:
             CTkMessagebox(title="File was not found", message="Could not find selected file, please try again", icon="cancel")
             self.info.grid_remove() # Hide early
@@ -111,8 +116,12 @@ class Home(customtkinter.CTkFrame):
         settingsHandler.addSetting("dpi", self.dpi)
         customtkinter.CTkEntry(self, textvariable=self.dpi, validate="key", validatecommand=(self.vcmd, "%P")).grid(row=4, column=1, padx=10, pady=0)
 
+        self.quicksave = customtkinter.CTkSwitch(self, text="Quick Save", command=settingsHandler.updateConfigSettings)
+        self.quicksave.grid(row=7, column=0, padx=20, pady=(30,5))
+        settingsHandler.addSetting("quicksave", self.quicksave)
+
         self.previewBtn = customtkinter.CTkButton(self, text="Show latest preview", fg_color="Black")
-        self.previewBtn.grid(row=7, column=0, padx=20, pady=(30,5))
+        self.previewBtn.grid(row=7, column=1, padx=20, pady=(30,5))
         
         self.presetFrame = PresetFrame(self)
         self.presetFrame.grid(row=8, column=0, columnspan=2, rowspan=2)
