@@ -28,7 +28,33 @@ def createDatabase(defaultDict: dict) -> None:
         
     conn.commit()
     conn.close()
-    
+
+def patchDatabase(defaultDict: dict) -> None:
+    with contextlib.closing(sqlite3.connect('data/program.db')) as conn:    
+        conn = sqlite3.connect('data/program.db')
+        c = conn.cursor()
+        c.execute("SELECT * FROM settings")
+        res = c.fetchall()
+        for setting in res:
+            if setting[0] in defaultDict.keys():
+                defaultDict.pop(setting[0])
+
+        updateArr = [] 
+        for key in defaultDict.keys():
+            if len(key) == 0: continue
+            if type(key) != str: raise ValueError("Key must be a string")
+            value = defaultDict[key]
+            updateArr.append((key, str(value), str(type(value).__name__)))
+
+        # Do insert if there is data for the insert
+        if len(updateArr) != 0:
+            c.executemany("""
+                INSERT INTO settings (setting, value, type) VALUES (?, ?, ?) """, updateArr)
+
+        conn.commit()
+        conn.close()
+
+
 def settingExist(name: str) -> bool:
     with contextlib.closing(sqlite3.connect('data/program.db')) as conn:    
         c = conn.cursor()
@@ -176,3 +202,5 @@ def setupProgram() -> None:
         with open("data/program.db", "w") as dbFile:
             dbFile.write("")
         createDatabase(getStandardValues())
+    else:
+        patchDatabase(getStandardValues())
